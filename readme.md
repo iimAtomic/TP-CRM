@@ -12,9 +12,9 @@ Ce projet est une application simple de gestion de la relation client (CRM) dév
 
 Les branches suivantes ont été utilisées pour développer les fonctionnalités du projet :
 
-V1 Branche unique nommé : `main` (Jour 1)
-V2 Branche unique nommé : `Refactoring_v2_du_CRM` (Jour 2)
-V2.2 Branche unique nommé : `Refactoring_v2.2_du_CRM` (Jour 2)
+* V1 Branche unique nommé : `main` (Jour 1)
+* V2 Branche unique nommé : `Refactoring_v2_du_CRM` (Jour 2)
+* V2.2 Branche unique nommé : `Refactoring_v2.2_du_CRM` (Jour 2)
 
 
 ---
