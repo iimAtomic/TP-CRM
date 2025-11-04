@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 )
@@ -51,7 +52,7 @@ func main() {
 	}
 }
 
-func addContact() {
+func addContact() error {
 	var Nom string
 	var Email string
 
@@ -63,6 +64,11 @@ func addContact() {
 	fmt.Print("Email : ")
 	_, _ = fmt.Scanln(&Email)
 
+	if Nom == "" || Email == "" {
+
+		return errors.New("informations manquantes")
+	}
+
 	newContact := Contact{
 		ID:    nextID,
 		Nom:   Nom,
@@ -70,10 +76,11 @@ func addContact() {
 	}
 
 	contacts = append(contacts, newContact)
-
 	nextID++
-
 	fmt.Printf("\nContact ajouté avec succès")
+
+	return nil
+
 }
 
 func listContact() {
