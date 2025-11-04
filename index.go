@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 var contacts []Contact
@@ -55,17 +57,21 @@ func main() {
 func addContact() error {
 	var Nom string
 	var Email string
+	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("\n******** Entrez votre contact ********")
 
 	fmt.Print("Nom : ")
-	_, _ = fmt.Scanln(&Nom)
+	Nom, _ = reader.ReadString('\n')
+	Nom = strings.TrimSpace(Nom)
 
 	fmt.Print("Email : ")
-	_, _ = fmt.Scanln(&Email)
+	Email, _ = reader.ReadString('\n')
+	Email = strings.TrimSpace(Email)
 
 	if Nom == "" || Email == "" {
 
+		println("informations manquantes veuillez ressayer")
 		return errors.New("informations manquantes")
 	}
 
