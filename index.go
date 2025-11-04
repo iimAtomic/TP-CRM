@@ -8,17 +8,75 @@ import (
 	"strings"
 )
 
-var contacts []Contact
-
-var nextID int = 1
-
 type Contact struct {
 	ID    int
 	Nom   string
 	Email string
 }
 
+type Storer interface {
+	Add(c *Contact) error
+	List() ([]Contact, error)
+	Delete(id int) error
+	Update(c *Contact) error
+}
+
+type MemoryStore struct {
+	contacts []Contact
+	nextID   int
+}
+
+func NewMemoryStore() *MemoryStore {
+	return &MemoryStore{
+		contacts: []Contact{},
+		nextID:   1,
+	}
+}
+
+func (m *MemoryStore) Add(c *Contact) error {
+	if c.Nom == "" || c.Email == "" {
+		return errors.New("informations manquantes")
+	}
+	c.ID = m.nextID
+	m.nextID++
+	m.contacts = append(m.contacts, *c)
+	return nil
+}
+
+func (m *MemoryStore) List() ([]Contact, error) {
+	return m.contacts, nil
+}
+
+func (m *MemoryStore) Delete(id int) error {
+	for i, c := range m.contacts {
+		if c.ID == id {
+			m.contacts = append(m.contacts[:i], m.contacts[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("pas de contact avec l'ID %d", id)
+}
+
+func (m *MemoryStore) Update(c *Contact) error {
+	for i := range m.contacts {
+		if m.contacts[i].ID == c.ID {
+			if c.Nom != "" {
+				m.contacts[i].Nom = c.Nom
+			}
+			if c.Email != "" {
+				m.contacts[i].Email = c.Email
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("aucun contact trouvé avec l'ID %d", c.ID)
+}
+
+var store Storer
+var reader = bufio.NewReader(os.Stdin)
+
 func main() {
+	store = NewMemoryStore()
 
 	for {
 		fmt.Println("\n****** Faites un choix ******** ")
@@ -29,11 +87,12 @@ func main() {
 		fmt.Println("5- Quitter l'application")
 		fmt.Println(" ********\n")
 
-		var Choix int
 		fmt.Print("Votre choix : ")
+		var Choix int
 		_, err := fmt.Scanln(&Choix)
 		if err != nil {
 			fmt.Println("Erreur de saisie. Veuillez entrer un numéro valide.")
+			reader.ReadString('\n') // vider le buffer
 			continue
 		}
 
@@ -47,6 +106,7 @@ func main() {
 		case 4:
 			updateContact()
 		case 5:
+			fmt.Println("Au revoir !")
 			os.Exit(0)
 		default:
 			fmt.Println("Choix invalide. Veuillez entrer un numéro entre 1 et 5.")
@@ -54,118 +114,70 @@ func main() {
 	}
 }
 
-func addContact() error {
-	var Nom string
-	var Email string
-	reader := bufio.NewReader(os.Stdin)
-
+func addContact() {
 	fmt.Println("\n******** Entrez votre contact ********")
-
 	fmt.Print("Nom : ")
-	Nom, _ = reader.ReadString('\n')
+	Nom, _ := reader.ReadString('\n')
 	Nom = strings.TrimSpace(Nom)
 
 	fmt.Print("Email : ")
-	Email, _ = reader.ReadString('\n')
+	Email, _ := reader.ReadString('\n')
 	Email = strings.TrimSpace(Email)
 
-	if Nom == "" || Email == "" {
-
-		println("informations manquantes veuillez ressayer")
-		return errors.New("informations manquantes")
+	err := store.Add(&Contact{Nom: Nom, Email: Email})
+	if err != nil {
+		fmt.Println("Erreur :", err)
+		return
 	}
 
-	newContact := Contact{
-		ID:    nextID,
-		Nom:   Nom,
-		Email: Email,
-	}
-
-	contacts = append(contacts, newContact)
-	nextID++
-	fmt.Printf("\nContact ajouté avec succès")
-
-	return nil
-
+	fmt.Println("Contact ajouté avec succès !")
 }
 
 func listContact() {
+	contacts, _ := store.List()
 	if len(contacts) == 0 {
 		fmt.Println("\nLa liste de contacts est vide.")
 		return
 	}
 
-	fmt.Println("\nListe des Contacts")
-
-	for _, contact := range contacts {
-		fmt.Printf("ID: %d, Nom: %s, Email: %s\n", contact.ID, contact.Nom, contact.Email)
+	fmt.Println("\nListe des Contacts :")
+	for _, c := range contacts {
+		fmt.Printf("ID: %d, Nom: %s, Email: %s\n", c.ID, c.Nom, c.Email)
 	}
-
-	fmt.Println("\n")
 }
 
 func supContact() {
-	if len(contacts) == 0 {
-		fmt.Println("\nImpossible de supprimer, la liste de contacts est vide.")
-		return
-	}
-
 	listContact()
-
-	var contactID int
 	fmt.Print("\nVeuillez entrer l'ID du contact à supprimer : ")
-	_, err := fmt.Scanln(&contactID)
+	var contactID int
+	fmt.Scanln(&contactID)
+
+	err := store.Delete(contactID)
 	if err != nil {
-		fmt.Println("Erreur de saisie. ID invalide.")
-		return
+		fmt.Println("Erreur :", err)
+	} else {
+		fmt.Printf("Contact avec l'ID %d supprimé avec succès.\n", contactID)
 	}
-
-	for i, contact := range contacts {
-		if contact.ID == contactID {
-			contacts = append(contacts[:i], contacts[i+1:]...)
-			fmt.Printf("Contact avec l'ID %d supprimé avec succès.\n", contactID)
-			return
-		}
-	}
-
-	fmt.Printf("Aucun contact trouvé avec l'ID %d.\n", contactID)
 }
 
 func updateContact() {
-	if len(contacts) == 0 {
-		fmt.Println("\nImpossible de mettre à jour, la liste de contacts est vide.")
-		return
-	}
-
 	listContact()
-
-	var contactID int
 	fmt.Print("\nEntrez l'ID du contact à mettre à jour : ")
-	_, _ = fmt.Scanln(&contactID)
+	var contactID int
+	fmt.Scanln(&contactID)
 
-	for i := range contacts {
-		if contacts[i].ID == contactID {
-			var newNom string
-			var newEmail string
+	fmt.Print("Nouveau Nom (laisser vide pour ne pas changer) : ")
+	newNom, _ := reader.ReadString('\n')
+	newNom = strings.TrimSpace(newNom)
 
-			fmt.Printf("Mise à jour du contact ID: %d (Nom actuel: %s, Email actuel: %s)\n", contacts[i].ID, contacts[i].Nom, contacts[i].Email)
+	fmt.Print("Nouvel Email (laisser vide pour ne pas changer) : ")
+	newEmail, _ := reader.ReadString('\n')
+	newEmail = strings.TrimSpace(newEmail)
 
-			fmt.Print("Entrez le nouveau Nom (laisser vide pour ne pas changer) : ")
-			_, _ = fmt.Scanln(&newNom)
-			if newNom != "" {
-				contacts[i].Nom = newNom
-			}
-
-			fmt.Print("Entrez le nouvel Email (laisser vide pour ne pas changer) : ")
-			_, _ = fmt.Scanln(&newEmail)
-			if newEmail != "" {
-				contacts[i].Email = newEmail
-			}
-
-			fmt.Printf("Contact avec l'ID %d mis à jour avec succès.\n", contactID)
-			return
-		}
+	err := store.Update(&Contact{ID: contactID, Nom: newNom, Email: newEmail})
+	if err != nil {
+		fmt.Println("Erreur :", err)
+	} else {
+		fmt.Printf("Contact avec l'ID %d mis à jour avec succès.\n", contactID)
 	}
-
-	fmt.Printf("Aucun contact trouvé avec l'ID %d.\n", contactID)
 }
