@@ -106,7 +106,6 @@ func main() {
 		case 4:
 			updateContact()
 		case 5:
-			fmt.Println("Au revoir !")
 			os.Exit(0)
 		default:
 			fmt.Println("Choix invalide. Veuillez entrer un numéro entre 1 et 5.")
