@@ -1,3 +1,3 @@
-module tp_lux
+module crm
 
 go 1.25.3
